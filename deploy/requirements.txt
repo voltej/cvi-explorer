@@ -1,8 +1,8 @@
-# Runtime deps for Streamlit Community Cloud / Hugging Face Spaces
-streamlit>=1.39
+# Keep in sync with app/requirements.txt (Cloud may pick either)
+streamlit>=1.39,<1.67
 pydeck>=0.9
 duckdb>=0.10
-pyarrow>=14.0
+pyarrow>=14.0,<25
 pandas>=2.0
 numpy>=1.24
 huggingface_hub>=0.20

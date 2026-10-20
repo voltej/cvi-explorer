@@ -55,30 +55,39 @@ st.set_page_config(
 )
 
 
-@st.cache_resource
-def _bust_stale_feature_cache() -> bool:
-    """One-shot clear of pre-provenance Feature pickles in st.cache_data."""
-    st.cache_data.clear()
-    return True
-
-
-_bust_stale_feature_cache()
-
-
 def _ensure_cache() -> bool:
     if cache_ready():
         return True
-    # Cloud: download prebuilt 100 m cache if CVI_CACHE_URL / CVI_HF_DATASET set
+
+    # Paint UI immediately — Cloud stays blank until the first run yields widgets.
+    st.title("FOCAL CVI — feature map explorer")
+    st.warning(
+        "First boot: downloading the Germany **100 m** cache (~0.5–0.6 GB). "
+        "This can take several minutes on Streamlit Community Cloud. "
+        "Keep this tab open."
+    )
+    status = st.status("Preparing data cache…", expanded=True)
+
+    def _progress(msg: str) -> None:
+        status.write(msg)
+
     from lib.bootstrap import ensure_app_cache
-    with st.spinner("Downloading app cache (100 m data)…"):
-        ok = ensure_app_cache()
+    ok = ensure_app_cache(progress=_progress)
     if ok and cache_ready():
+        status.update(label="Cache ready", state="complete")
+        st.rerun()
         return True
+
+    status.update(label="Cache download failed", state="error")
     st.error(
         f"App cache not found under `{APP_CACHE}`.\n\n"
         "Locally: `.venv/bin/python app/build_cache.py all`\n\n"
-        "Cloud: set secret `CVI_HF_DATASET` or `CVI_CACHE_URL` "
-        "(see `app/DEPLOY.md`)."
+        "Cloud secrets (App settings → Secrets):\n\n"
+        "```toml\n"
+        'CVI_HF_DATASET = "voltej/cvi-app-cache"\n'
+        'CVI_HF_FILENAME = "app_cache.tar.gz"\n'
+        'HF_TOKEN = "hf_..."\n'
+        "```"
     )
     return False
 
